@@ -7,6 +7,20 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 
 
+def get_media_storage():
+    if getattr(settings, 'DEBUG', True):
+        return LocalMediaStorage()
+    required = [
+        getattr(settings, 'AWS_ACCESS_KEY_ID', None),
+        getattr(settings, 'AWS_SECRET_ACCESS_KEY', None),
+        getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None),
+        getattr(settings, 'AWS_S3_REGION_NAME', None),
+    ]
+    if all(required):
+        return S3MediaStorage()
+    return LocalMediaStorage()
+
+
 class LocalMediaStorage(FileSystemStorage):
     def __init__(self, location=None, base_url=None):
         location = location or os.path.join(settings.BASE_DIR, 'media')

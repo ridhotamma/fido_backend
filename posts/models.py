@@ -1,6 +1,6 @@
 from django.db import models
 from users.models import CustomUser
-from media_utils import LocalMediaStorage, S3MediaStorage, ImageVariantMixin
+from media_utils import get_media_storage, ImageVariantMixin
 
 
 class Post(models.Model):
@@ -60,7 +60,7 @@ class CommentLike(models.Model):
 
 class PostMedia(models.Model, ImageVariantMixin):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
-    file = models.ImageField(upload_to='post_media/', storage=LocalMediaStorage(), blank=True, null=True)
+    file = models.ImageField(upload_to='post_media/', storage=get_media_storage(), blank=True, null=True)
     file_sm = models.URLField(blank=True, null=True)
     file_md = models.URLField(blank=True, null=True)
     file_lg = models.URLField(blank=True, null=True)
@@ -69,20 +69,7 @@ class PostMedia(models.Model, ImageVariantMixin):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.file:
-            from django.conf import settings
-            if getattr(settings, 'DEBUG', True):
-                storage = LocalMediaStorage()
-            else:
-                required = [
-                    getattr(settings, 'AWS_ACCESS_KEY_ID', None),
-                    getattr(settings, 'AWS_SECRET_ACCESS_KEY', None),
-                    getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None),
-                    getattr(settings, 'AWS_S3_REGION_NAME', None),
-                ]
-                if all(required):
-                    storage = S3MediaStorage()
-                else:
-                    storage = LocalMediaStorage()
+            storage = get_media_storage()
             base_path = f"post_media/{self.pk}/media"
             variants = self.generate_variants(self.file, storage, base_path)
             self.file_sm = variants.get('sm')

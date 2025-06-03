@@ -3,6 +3,7 @@ from .models import Message
 from .serializers import MessageSerializer
 from notifications.models import Notification
 from django.db.models import Q
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 # Create your views here.
@@ -25,6 +26,7 @@ class MessageListView(generics.ListAPIView):
 class MessageSendView(generics.CreateAPIView):
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def perform_create(self, serializer):
         recipient_id = self.kwargs.get('user_id')
