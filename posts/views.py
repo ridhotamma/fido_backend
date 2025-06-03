@@ -7,6 +7,7 @@ from .serializers import PostSerializer, PostMediaSerializer, CommentSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
 from notifications.models import Notification
+from notifications.views import send_realtime_notification
 
 
 class PostCreateView(generics.CreateAPIView):
@@ -56,7 +57,7 @@ class CommentCreateView(generics.CreateAPIView):
         comment = serializer.save(user=self.request.user, post=post, parent=parent)
         # Notification for reply
         if parent and parent.user != self.request.user:
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 recipient=parent.user,
                 sender=self.request.user,
                 notification_type='reply',
@@ -64,6 +65,7 @@ class CommentCreateView(generics.CreateAPIView):
                 comment=comment,
                 message=f"{self.request.user.username} replied to your comment."
             )
+            send_realtime_notification(notification)
 
 
 class CommentListView(generics.ListAPIView):
@@ -94,13 +96,14 @@ class LikePostView(APIView):
             return Response({'detail': 'Already liked.'}, status=status.HTTP_400_BAD_REQUEST)
         # Notification for like
         if post.user != request.user:
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 recipient=post.user,
                 sender=request.user,
                 notification_type='like',
                 post=post,
                 message=f"{request.user.username} liked your post."
             )
+            send_realtime_notification(notification)
         return Response({'detail': 'Post liked.'}, status=status.HTTP_201_CREATED)
 
 
@@ -139,7 +142,7 @@ class LikeCommentView(APIView):
             return Response({'detail': 'Already liked.'}, status=status.HTTP_400_BAD_REQUEST)
         # Notification for comment like
         if comment.user != request.user:
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 recipient=comment.user,
                 sender=request.user,
                 notification_type='like',
@@ -147,6 +150,7 @@ class LikeCommentView(APIView):
                 comment=comment,
                 message=f"{request.user.username} liked your comment."
             )
+            send_realtime_notification(notification)
         return Response({'detail': 'Comment liked.'}, status=status.HTTP_201_CREATED)
 
 

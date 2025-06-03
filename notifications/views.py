@@ -1,6 +1,8 @@
 from rest_framework import generics, permissions
 from .models import Notification
 from .serializers import NotificationSerializer
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 class NotificationListView(generics.ListAPIView):
@@ -18,3 +20,17 @@ class NotificationMarkReadView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         serializer.save(is_read=True)
+
+
+def send_realtime_notification(notification):
+    channel_layer = get_channel_layer()
+    group_name = f'user_notifications_{notification.recipient.id}'
+    from notifications.serializers import NotificationSerializer
+    data = NotificationSerializer(notification).data
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            'type': 'send_notification',
+            'notification': data
+        }
+    )

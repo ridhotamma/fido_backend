@@ -4,9 +4,35 @@ from .serializers import MessageSerializer
 from notifications.models import Notification
 from django.db.models import Q
 from rest_framework.parsers import MultiPartParser, FormParser
+from notifications.views import send_realtime_notification
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
-# Create your views here.
+def send_realtime_message(message):
+    channel_layer = get_channel_layer()
+    group_name = f"chat_{message.sender.id}_{message.recipient.id}"
+    media = {}
+
+    if hasattr(message, 'image') and message.image:
+        media['image'] = message.image.url
+    if hasattr(message, 'video') and message.video:
+        media['video'] = message.video.url
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            'type': 'chat.message',
+            'message': {
+                'id': message.id,
+                'sender': message.sender.username,
+                'recipient': message.recipient.username,
+                'content': message.content,
+                'created_at': message.created_at.isoformat(),
+                **media
+            }
+        }
+    )
+
 
 class MessageListView(generics.ListAPIView):
     serializer_class = MessageSerializer
@@ -37,9 +63,16 @@ class MessageSendView(generics.CreateAPIView):
         serializer.save(sender=self.request.user, recipient=recipient)
         # Notification for receiving a message
         if recipient and recipient != self.request.user:
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 recipient=recipient,
                 sender=self.request.user,
                 notification_type='message',
                 message=f"{self.request.user.username} sent you a message."
             )
+            send_realtime_notification(notification)
+            # Real-time chat message
+            last_message = Message.objects.filter(
+                sender=self.request.user, recipient=recipient
+            ).order_by('-created_at').first()
+            if last_message:
+                send_realtime_message(last_message)

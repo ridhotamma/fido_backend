@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'notifications',
     'messages',  # custom app for direct messages, label is unique
     'drf_spectacular',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'fido_web.wsgi.application'
+ASGI_APPLICATION = 'fido_web.asgi.application'
 
 
 # Database
@@ -166,4 +168,13 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API documentation for Fido Web',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+}
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
 }

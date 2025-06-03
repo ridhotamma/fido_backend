@@ -3,8 +3,6 @@ from users.models import CustomUser
 from media_utils import get_media_storage
 
 
-# Create your models here.
-
 class Message(models.Model):
     sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sent_messages')
     recipient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='received_messages')
