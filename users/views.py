@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginByEmailOrPhoneSerializer
 from .models import Follow
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.generics import GenericAPIView
 
 User = get_user_model()
 
@@ -120,15 +121,15 @@ class FollowingListView(APIView):
         return Response(data)
 
 
-class ProfilePictureUploadView(APIView):
+class ProfilePictureUploadView(GenericAPIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    serializer_class = ProfilePictureSerializer
 
     def post(self, request):
-        serializer = ProfilePictureSerializer(request.user, data=request.data, partial=True)
+        serializer = self.get_serializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            # Refresh user to get new variant URLs
             request.user.refresh_from_db()
             return Response({
                 'avatar': request.user.avatar.url if request.user.avatar else None,

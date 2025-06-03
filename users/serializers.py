@@ -60,6 +60,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class ProfilePictureSerializer(serializers.ModelSerializer):
+    avatar = serializers.ImageField(required=False, allow_null=True)
     avatar_sm = serializers.URLField(read_only=True)
     avatar_md = serializers.URLField(read_only=True)
     avatar_lg = serializers.URLField(read_only=True)
