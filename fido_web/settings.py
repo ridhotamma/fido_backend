@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'posts',
     'notifications',
     'messages',  # custom app for direct messages, label is unique
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -157,4 +158,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Fido Web API',
+    'DESCRIPTION': 'API documentation for Fido Web',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }

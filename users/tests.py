@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from io import BytesIO
 from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 User = get_user_model()
@@ -135,3 +136,25 @@ class UserProfileTests(APITestCase):
         self.assertIn('sm', self.user.avatar_sm)
         self.assertIn('md', self.user.avatar_md)
         self.assertIn('lg', self.user.avatar_lg)
+
+
+class UserAvatarUploadTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='avataruser', email='avataruser@example.com', password='pass1234')
+        self.client.force_authenticate(user=self.user)
+        self.url = reverse('profile_upload_avatar')
+
+    def test_upload_avatar(self):
+        img = Image.new('RGB', (100, 100), color=(0, 255, 0))
+        img_io = BytesIO()
+        img.save(img_io, 'JPEG')
+        img_io.seek(0)
+        img_file = SimpleUploadedFile('avatar.jpg', img_io.read(), content_type='image/jpeg')
+        data = {'avatar': img_file}
+        response = self.client.post(self.url, data, format='multipart')
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.avatar.name.endswith('.jpg'))
+        self.assertIsNotNone(self.user.avatar_sm)
+        self.assertIsNotNone(self.user.avatar_md)
+        self.assertIsNotNone(self.user.avatar_lg)
