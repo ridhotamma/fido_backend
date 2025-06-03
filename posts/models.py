@@ -30,9 +30,9 @@ class Comment(models.Model):
         return f"{self.user.username} on {self.post.id}: {self.content[:30]}"
 
 
-class Like(models.Model):
+class PostLike(models.Model):
     user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='likes'
+        CustomUser, on_delete=models.CASCADE, related_name='post_likes'
     )
     post = models.ForeignKey(
         Post, on_delete=models.CASCADE, related_name='likes'
