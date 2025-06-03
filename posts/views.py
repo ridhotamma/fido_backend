@@ -6,6 +6,7 @@ from .models import Post, Comment, Like
 from .serializers import PostSerializer, PostMediaSerializer, CommentSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
+from notifications.models import Notification
 
 
 class PostCreateView(generics.CreateAPIView):
@@ -52,7 +53,17 @@ class CommentCreateView(generics.CreateAPIView):
         parent = None
         if 'parent_id' in self.kwargs:
             parent = get_object_or_404(Comment, pk=self.kwargs['parent_id'])
-        serializer.save(user=self.request.user, post=post, parent=parent)
+        comment = serializer.save(user=self.request.user, post=post, parent=parent)
+        # Notification for reply
+        if parent and parent.user != self.request.user:
+            Notification.objects.create(
+                recipient=parent.user,
+                sender=self.request.user,
+                notification_type='reply',
+                post=post,
+                comment=comment,
+                message=f"{self.request.user.username} replied to your comment."
+            )
 
 
 class CommentListView(generics.ListAPIView):
@@ -81,6 +92,15 @@ class LikePostView(APIView):
         like, created = Like.objects.get_or_create(user=request.user, post=post)
         if not created:
             return Response({'detail': 'Already liked.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Notification for like
+        if post.user != request.user:
+            Notification.objects.create(
+                recipient=post.user,
+                sender=request.user,
+                notification_type='like',
+                post=post,
+                message=f"{request.user.username} liked your post."
+            )
         return Response({'detail': 'Post liked.'}, status=status.HTTP_201_CREATED)
 
 

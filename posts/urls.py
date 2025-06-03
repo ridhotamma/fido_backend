@@ -10,8 +10,8 @@ urlpatterns = [
     path('<int:post_id>/comments/', CommentListView.as_view(), name='comment_list'),
     path('<int:post_id>/comments/create/', CommentCreateView.as_view(), name='comment_create'),
     path('comments/<int:parent_id>/replies/', CommentReplyListView.as_view(), name='comment_reply_list'),
-    path('<int:post_id>/comments/<int:parent_id>/reply/', CommentCreateView.as_view(), name='comment_reply'),
-    path('<int:post_id>/like/', LikePostView.as_view(), name='post_like'),
+    path('<int:post_id>/comments/<int:parent_id>/reply/', CommentCreateView.as_view(), name='comment-reply'),
+    path('<int:post_id>/like/', LikePostView.as_view(), name='like-post'),
     path('<int:post_id>/unlike/', UnlikePostView.as_view(), name='post_unlike'),
     path('<int:post_id>/media/upload/', PostMediaUploadView.as_view(), name='post_media_upload'),
 ]
