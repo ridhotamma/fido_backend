@@ -2,11 +2,12 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, ProfilePictureSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import LoginByEmailOrPhoneSerializer
 from .models import Follow
+from rest_framework.parsers import MultiPartParser, FormParser
 
 User = get_user_model()
 
@@ -117,3 +118,22 @@ class FollowingListView(APIView):
         following = Follow.objects.filter(follower_id=user_id).select_related('following')
         data = [{'id': f.following.id, 'username': f.following.username} for f in following]
         return Response(data)
+
+
+class ProfilePictureUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        serializer = ProfilePictureSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            # Refresh user to get new variant URLs
+            request.user.refresh_from_db()
+            return Response({
+                'avatar': request.user.avatar.url if request.user.avatar else None,
+                'avatar_sm': request.user.avatar_sm,
+                'avatar_md': request.user.avatar_md,
+                'avatar_lg': request.user.avatar_lg,
+            }, status=200)
+        return Response(serializer.errors, status=400)

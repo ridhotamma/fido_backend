@@ -1,6 +1,9 @@
 from rest_framework.test import APITestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
+from io import BytesIO
+from PIL import Image
 
 
 User = get_user_model()
@@ -92,3 +95,42 @@ class UserAuthTests(APITestCase):
         response = self.client.get(followers_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
+
+
+class UserProfileTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='user1', email='user1@example.com', password='pass1234')
+        refresh = RefreshToken.for_user(self.user)
+        self.token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
+
+    def test_update_user_profile(self):
+        url = reverse('profile_update')
+        data = {'first_name': 'Updated', 'last_name': 'User'}
+        response = self.client.put(url, data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, 'Updated')
+        self.assertEqual(self.user.last_name, 'User')
+
+    def test_upload_avatar_and_variants(self):
+        url = reverse('profile_upload_avatar')
+        # Create a simple image in memory
+        img = Image.new('RGB', (600, 600), color=(73, 109, 137))
+        img_io = BytesIO()
+        img.save(img_io, 'JPEG')
+        img_io.seek(0)
+        img_io.name = 'test.jpg'  # Set a name attribute for the file
+        data = {'avatar': img_io}
+        response = self.client.post(url, data, format='multipart')
+        print('UPLOAD RESPONSE:', response.status_code, response.data)
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        # Check all avatar variants are present
+        self.assertIsNotNone(self.user.avatar_sm)
+        self.assertIsNotNone(self.user.avatar_md)
+        self.assertIsNotNone(self.user.avatar_lg)
+        # Optionally, check the URLs are correct format
+        self.assertIn('sm', self.user.avatar_sm)
+        self.assertIn('md', self.user.avatar_md)
+        self.assertIn('lg', self.user.avatar_lg)

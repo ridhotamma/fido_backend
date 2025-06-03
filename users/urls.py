@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import RegisterView, ProfileMeView, ProfileUpdateView, LoginByEmailOrPhoneView, \
-    FollowUserView, UnfollowUserView, FollowersListView, FollowingListView
+    ProfilePictureUploadView, FollowUserView, UnfollowUserView, FollowersListView, FollowingListView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 
@@ -14,4 +14,5 @@ urlpatterns = [
     path('<int:user_id>/unfollow/', UnfollowUserView.as_view(), name='unfollow_user'),
     path('<int:user_id>/followers/', FollowersListView.as_view(), name='followers_list'),
     path('<int:user_id>/following/', FollowingListView.as_view(), name='following_list'),
+    path('profile/upload-avatar/', ProfilePictureUploadView.as_view(), name='profile_upload_avatar'),
 ]

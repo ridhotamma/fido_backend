@@ -1,0 +1,41 @@
+# Byte-compiled / cache / temp files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+db.sqlite3
+media/
+staticfiles/
+
+# VSCode
+.vscode/
+
+# Environment
+.env
+venv/
+ENV/
+
+# macOS
+.DS_Store
+
+# Test output
+*.log
+*.coverage
+htmlcov/
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# S3/CloudFront credentials (never commit these!)
+.aws/
+
+# Misc
+*.swp
+*.swo
+
+# Ignore migrations cache
+**/migrations/__pycache__/
