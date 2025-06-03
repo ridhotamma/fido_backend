@@ -14,8 +14,7 @@ class MessageNotificationTests(APITestCase):
 
     def test_send_message_and_notification(self):
         data = {'content': 'Hello there!'}
-        response = self.client.post(self.send_url, data, format='json')
-        print('RESPONSE DATA:', response.data)
+        response = self.client.post(self.send_url, data, format='multipart')
         self.assertEqual(response.status_code, 201)
         # Message created
         msg = Message.objects.filter(sender=self.sender, recipient=self.recipient, content='Hello there!').first()
