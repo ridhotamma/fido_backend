@@ -1,15 +1,23 @@
 from rest_framework import serializers
-from .models import Post, Comment
+from .models import Post, Comment, PostMedia
+
+
+class PostMediaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostMedia
+        fields = ['id', 'file', 'file_sm', 'file_md', 'file_lg', 'uploaded_at']
+        read_only_fields = ['id', 'file_sm', 'file_md', 'file_lg', 'uploaded_at']
 
 
 class PostSerializer(serializers.ModelSerializer):
+    media = PostMediaSerializer(many=True, read_only=True)
     likes_count = serializers.SerializerMethodField()
     likes = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
-        fields = ['id', 'user', 'content', 'created_at', 'archived', 'likes_count', 'likes']
-        read_only_fields = ['id', 'user', 'created_at', 'archived', 'likes_count', 'likes']
+        fields = ['id', 'user', 'content', 'created_at', 'archived', 'likes_count', 'likes', 'media']
+        read_only_fields = ['id', 'user', 'created_at', 'archived', 'likes_count', 'likes', 'media']
 
     def get_likes_count(self, obj):
         return obj.likes.count()

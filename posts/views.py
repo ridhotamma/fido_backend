@@ -3,8 +3,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .models import Post, Comment, Like
-from .serializers import PostSerializer, CommentSerializer
+from .serializers import PostSerializer, PostMediaSerializer, CommentSerializer
 from django.shortcuts import get_object_or_404
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class PostCreateView(generics.CreateAPIView):
@@ -92,3 +93,17 @@ class UnlikePostView(APIView):
         if deleted:
             return Response({'detail': 'Post unliked.'}, status=status.HTTP_200_OK)
         return Response({'detail': 'You have not liked this post.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PostMediaUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, post_id):
+        post = get_object_or_404(Post, pk=post_id, user=request.user)
+        serializer = PostMediaSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(post=post)
+            post.refresh_from_db()
+            return Response(PostSerializer(post).data, status=201)
+        return Response(serializer.errors, status=400)

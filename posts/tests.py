@@ -1,6 +1,10 @@
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 from posts.models import Post, Comment
+from rest_framework_simplejwt.tokens import RefreshToken
+from io import BytesIO
+from PIL import Image
 
 User = get_user_model()
 
@@ -78,3 +82,32 @@ class PostCrudTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         post.refresh_from_db()
         self.assertTrue(post.archived)
+
+
+class PostMediaUploadTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='user1', email='user1@example.com', password='pass1234')
+        refresh = RefreshToken.for_user(self.user)
+        self.token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
+        self.post = Post.objects.create(user=self.user, content='A post with media')
+
+    def test_upload_post_media_and_variants(self):
+        url = reverse('post_media_upload', args=[self.post.id])
+        img = Image.new('RGB', (800, 800), color=(120, 120, 120))
+        img_io = BytesIO()
+        img.save(img_io, 'JPEG')
+        img_io.seek(0)
+        img_io.name = 'media1.jpg'
+        data = {'file': img_io}
+        response = self.client.post(url, data, format='multipart')
+        self.assertEqual(response.status_code, 201)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.media.count(), 1)
+        media = self.post.media.first()
+        self.assertIsNotNone(media.file_sm)
+        self.assertIsNotNone(media.file_md)
+        self.assertIsNotNone(media.file_lg)
+        self.assertIn('sm', media.file_sm)
+        self.assertIn('md', media.file_md)
+        self.assertIn('lg', media.file_lg)
