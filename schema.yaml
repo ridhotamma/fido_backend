@@ -2,7 +2,43 @@ openapi: 3.0.3
 info:
   title: Fido Web API
   version: 1.0.0
-  description: API documentation for Fido Web
+  description: |
+    API documentation for Fido Web
+
+    ## WebSocket Endpoints
+
+    ### Notifications
+    - **URL:** `ws[s]://<host>/ws/notifications/{user_id}/`
+    - **Description:** Receive real-time notifications for the user.
+    - **Authentication:** Uses Django session or JWT (if configured).
+    - **Example message (server -> client):**
+      ```json
+      {
+        "id": 123,
+        "type": "like",
+        "message": "User X liked your post"
+      }
+      ```
+
+    ### Chat
+    - **URL:** `ws[s]://<host>/ws/chat/{user_id}/`
+    - **Description:** Real-time chat with another user.
+    - **Example message (client -> server):**
+      ```json
+      {
+        "content": "Hello!"
+      }
+      ```
+    - **Example message (server -> client):**
+      ```json
+      {
+        "id": 456,
+        "sender": "alice",
+        "recipient": "bob",
+        "content": "Hello!",
+        "created_at": "2024-06-01T12:00:00Z"
+      }
+      ```
 paths:
   /api/messages/:
     get:
