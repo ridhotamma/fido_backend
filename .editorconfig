@@ -1,0 +1,11 @@
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[flake8]
+max-line-length = 88
+exclude = .git,__pycache__,venv,env,migrations,media
+ignore = E203, E266, E501, W503
