@@ -79,7 +79,8 @@ class UserAuthTests(APITestCase):
         self.assertEqual(response.data[0]['username'], user1_data['username'])
 
         # Check following of user1
-        following_url = reverse('following_list', args=[self.client.handler._force_user.id])
+        user1 = User.objects.get(email=user1_data['email'])
+        following_url = reverse('following_list', args=[user1.id])
         response = self.client.get(following_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)

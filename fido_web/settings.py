@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'users',
     'posts',
     'notifications',
+    'messages',  # custom app for direct messages, label is unique
 ]
 
 MIDDLEWARE = [
