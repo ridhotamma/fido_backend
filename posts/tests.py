@@ -5,6 +5,7 @@ from posts.models import Post, Comment
 from rest_framework_simplejwt.tokens import RefreshToken
 from io import BytesIO
 from PIL import Image
+from notifications.models import Notification
 
 User = get_user_model()
 
@@ -111,3 +112,77 @@ class PostMediaUploadTests(APITestCase):
         self.assertIn('sm', media.file_sm)
         self.assertIn('md', media.file_md)
         self.assertIn('lg', media.file_lg)
+
+
+class CommentLikeTests(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username='clike1', email='clike1@example.com', password='pass1234')
+        self.user2 = User.objects.create_user(username='clike2', email='clike2@example.com', password='pass1234')
+        self.post = Post.objects.create(user=self.user1, content='Post for comment like')
+        self.comment = Comment.objects.create(user=self.user2, post=self.post, content='Comment to like')
+        self.like_url = f'/api/posts/comments/{self.comment.id}/like/'
+        self.unlike_url = f'/api/posts/comments/{self.comment.id}/unlike/'
+
+    def test_user_can_like_comment(self):
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.post(self.like_url)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(self.comment.likes.count(), 1)
+        self.assertEqual(self.comment.likes.first().user, self.user1)
+
+    def test_user_cannot_like_comment_twice(self):
+        self.client.force_authenticate(user=self.user1)
+        self.client.post(self.like_url)
+        response = self.client.post(self.like_url)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.comment.likes.count(), 1)
+
+    def test_user_can_unlike_comment(self):
+        self.client.force_authenticate(user=self.user1)
+        self.client.post(self.like_url)
+        response = self.client.post(self.unlike_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.comment.likes.count(), 0)
+
+    def test_user_unlike_without_like(self):
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.post(self.unlike_url)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.comment.likes.count(), 0)
+
+
+class CommentLikeNotificationTests(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username='notify1', email='notify1@example.com', password='pass1234')
+        self.user2 = User.objects.create_user(username='notify2', email='notify2@example.com', password='pass1234')
+        self.post = Post.objects.create(user=self.user1, content='Post for notification')
+        self.comment = Comment.objects.create(user=self.user2, post=self.post, content='Comment to be liked')
+        self.like_url = f'/api/posts/comments/{self.comment.id}/like/'
+        self.unlike_url = f'/api/posts/comments/{self.comment.id}/unlike/'
+
+    def test_like_comment_creates_notification(self):
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.post(self.like_url)
+        self.assertEqual(response.status_code, 201)
+        notif = Notification.objects.filter(
+            recipient=self.user2,
+            sender=self.user1,
+            comment=self.comment,
+            notification_type='like'
+        ).first()
+        self.assertIsNotNone(notif)
+        self.assertIn('liked your comment', notif.message)
+
+    def test_unlike_comment_does_not_create_notification(self):
+        self.client.force_authenticate(user=self.user1)
+        self.client.post(self.like_url)
+        Notification.objects.all().delete()  # Clear notifications
+        response = self.client.post(self.unlike_url)
+        self.assertEqual(response.status_code, 200)
+        notif = Notification.objects.filter(
+            recipient=self.user2,
+            sender=self.user1,
+            comment=self.comment,
+            notification_type='like'
+        ).first()
+        self.assertIsNone(notif)

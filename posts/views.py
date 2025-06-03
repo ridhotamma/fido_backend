@@ -2,7 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from .models import Post, Comment, Like
+from .models import Post, Comment, Like, CommentLike
 from .serializers import PostSerializer, PostMediaSerializer, CommentSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -127,3 +127,35 @@ class PostMediaUploadView(APIView):
             post.refresh_from_db()
             return Response(PostSerializer(post).data, status=201)
         return Response(serializer.errors, status=400)
+
+
+class LikeCommentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, comment_id):
+        comment = get_object_or_404(Comment, pk=comment_id)
+        like, created = CommentLike.objects.get_or_create(user=request.user, comment=comment)
+        if not created:
+            return Response({'detail': 'Already liked.'}, status=status.HTTP_400_BAD_REQUEST)
+        # Notification for comment like
+        if comment.user != request.user:
+            Notification.objects.create(
+                recipient=comment.user,
+                sender=request.user,
+                notification_type='like',
+                post=comment.post,
+                comment=comment,
+                message=f"{request.user.username} liked your comment."
+            )
+        return Response({'detail': 'Comment liked.'}, status=status.HTTP_201_CREATED)
+
+
+class UnlikeCommentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, comment_id):
+        comment = get_object_or_404(Comment, pk=comment_id)
+        deleted, _ = CommentLike.objects.filter(user=request.user, comment=comment).delete()
+        if deleted:
+            return Response({'detail': 'Comment unliked.'}, status=status.HTTP_200_OK)
+        return Response({'detail': 'You have not liked this comment.'}, status=status.HTTP_400_BAD_REQUEST)

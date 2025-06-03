@@ -46,6 +46,18 @@ class Like(models.Model):
         return f"{self.user.username} likes {self.post.id}"
 
 
+class CommentLike(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='comment_likes')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'comment')
+
+    def __str__(self):
+        return f"{self.user.username} likes comment {self.comment.id}"
+
+
 class PostMedia(models.Model, ImageVariantMixin):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     file = models.ImageField(upload_to='post_media/', storage=LocalMediaStorage(), blank=True, null=True)
