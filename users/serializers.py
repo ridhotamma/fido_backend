@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+import re
 
 from .models import CustomUser
 
@@ -34,9 +35,9 @@ class LoginByEmailOrPhoneSerializer(serializers.Serializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True)
+    username = serializers.CharField(required=False, allow_blank=True)
     full_name = serializers.CharField(write_only=True)
-    email = serializers.EmailField(required=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
     phone_number = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, validators=[validate_password])
 
@@ -44,12 +45,28 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "username", "full_name", "email", "phone_number", "password")
 
+    def validate(self, attrs):
+        username = attrs.get("username", "").strip()
+        email = attrs.get("email", "").strip()
+        if not username and not email:
+            raise serializers.ValidationError({"non_field_errors": "You must provide either a username or an email."})
+        if username:
+            if re.search(r'\s', username):
+                raise serializers.ValidationError({"username": "Username cannot contain spaces or whitespace."})
+            if not re.match(r'^[A-Za-z0-9_]+$', username):
+                raise serializers.ValidationError({"username": "Username can only contain letters, numbers, and underscores (_)."})
+            if User.objects.filter(username=username).exists():
+                raise serializers.ValidationError({"username": "This username is already taken."})
+        if email and User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({"email": "This email is already registered."})
+        return attrs
+
     def create(self, validated_data):
         full_name = validated_data.pop("full_name")
         first_name, *last_name = full_name.split(" ", 1)
         user = User(
-            username=validated_data["username"],
-            email=validated_data["email"],
+            username=validated_data.get("username", "") or None,
+            email=validated_data.get("email", "") or None,
             first_name=first_name,
             last_name=last_name[0] if last_name else "",
             bio="",
