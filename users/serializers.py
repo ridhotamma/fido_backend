@@ -49,16 +49,28 @@ class RegisterSerializer(serializers.ModelSerializer):
         username = attrs.get("username", "").strip()
         email = attrs.get("email", "").strip()
         if not username and not email:
-            raise serializers.ValidationError({"non_field_errors": "You must provide either a username or an email."})
+            raise serializers.ValidationError(
+                {"non_field_errors": "You must provide either a username or an email."}
+            )
         if username:
-            if re.search(r'\s', username):
-                raise serializers.ValidationError({"username": "Username cannot contain spaces or whitespace."})
-            if not re.match(r'^[A-Za-z0-9_]+$', username):
-                raise serializers.ValidationError({"username": "Username can only contain letters, numbers, and underscores (_)."})
+            if re.search(r"\s", username):
+                raise serializers.ValidationError(
+                    {"username": "Username cannot contain spaces or whitespace."}
+                )
+            if not re.match(r"^[A-Za-z0-9_]+$", username):
+                raise serializers.ValidationError(
+                    {
+                        "username": "Username can only contain letters, numbers, and underscores (_)."
+                    }
+                )
             if User.objects.filter(username=username).exists():
-                raise serializers.ValidationError({"username": "This username is already taken."})
+                raise serializers.ValidationError(
+                    {"username": "This username is already taken."}
+                )
         if email and User.objects.filter(email=email).exists():
-            raise serializers.ValidationError({"email": "This email is already registered."})
+            raise serializers.ValidationError(
+                {"email": "This email is already registered."}
+            )
         return attrs
 
     def create(self, validated_data):

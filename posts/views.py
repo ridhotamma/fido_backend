@@ -9,7 +9,12 @@ from notifications.models import Notification
 from notifications.views import send_realtime_notification
 
 from .models import Comment, CommentLike, Post, PostLike, Tag
-from .serializers import CommentSerializer, PostMediaSerializer, PostSerializer, TagSerializer
+from .serializers import (
+    CommentSerializer,
+    PostMediaSerializer,
+    PostSerializer,
+    TagSerializer,
+)
 
 
 class PostCreateView(generics.CreateAPIView):

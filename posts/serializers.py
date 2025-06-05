@@ -22,7 +22,9 @@ class PostSerializer(serializers.ModelSerializer):
     likes_count = serializers.SerializerMethodField()
     likes = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
-    tag_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
+    tag_names = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False
+    )
 
     class Meta:
         model = Post
@@ -70,6 +72,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     def _handle_tags(self, post, tag_names):
         import re
+
         tags = set(tag_names)
         # Also extract hashtags from content
         tags.update(re.findall(r"#(\w+)", post.content))
