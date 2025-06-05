@@ -49,7 +49,7 @@ class PostArchiveView(APIView):
         post = get_object_or_404(Post, pk=pk, user=request.user)
         post.archived = True
         post.save()
-        return Response({"detail": "Post archived."}, status=status.HTTP_200_OK)
+        return Response({"message": "Post archived."}, status=status.HTTP_200_OK)
 
 
 class CommentCreateView(generics.CreateAPIView):
@@ -103,7 +103,7 @@ class LikePostView(APIView):
         like, created = PostLike.objects.get_or_create(user=request.user, post=post)
         if not created:
             return Response(
-                {"detail": "Already liked."}, status=status.HTTP_400_BAD_REQUEST
+                {"message": "Already liked."}, status=status.HTTP_400_BAD_REQUEST
             )
         # Notification for like
         if post.user != request.user:
@@ -115,7 +115,7 @@ class LikePostView(APIView):
                 message=f"{request.user.username} liked your post.",
             )
             send_realtime_notification(notification)
-        return Response({"detail": "Post liked."}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Post liked."}, status=status.HTTP_201_CREATED)
 
 
 class UnlikePostView(APIView):
@@ -125,9 +125,9 @@ class UnlikePostView(APIView):
         post = get_object_or_404(Post, pk=post_id)
         deleted, _ = PostLike.objects.filter(user=request.user, post=post).delete()
         if deleted:
-            return Response({"detail": "Post unliked."}, status=status.HTTP_200_OK)
+            return Response({"message": "Post unliked."}, status=status.HTTP_200_OK)
         return Response(
-            {"detail": "You have not liked this post."},
+            {"message": "You have not liked this post."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -156,7 +156,7 @@ class LikeCommentView(APIView):
         )
         if not created:
             return Response(
-                {"detail": "Already liked."}, status=status.HTTP_400_BAD_REQUEST
+                {"message": "Already liked."}, status=status.HTTP_400_BAD_REQUEST
             )
         # Notification for comment like
         if comment.user != request.user:
@@ -169,7 +169,7 @@ class LikeCommentView(APIView):
                 message=f"{request.user.username} liked your comment.",
             )
             send_realtime_notification(notification)
-        return Response({"detail": "Comment liked."}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Comment liked."}, status=status.HTTP_201_CREATED)
 
 
 class UnlikeCommentView(APIView):
@@ -181,9 +181,9 @@ class UnlikeCommentView(APIView):
             user=request.user, comment=comment
         ).delete()
         if deleted:
-            return Response({"detail": "Comment unliked."}, status=status.HTTP_200_OK)
+            return Response({"message": "Comment unliked."}, status=status.HTTP_200_OK)
         return Response(
-            {"detail": "You have not liked this comment."},
+            {"message": "You have not liked this comment."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 

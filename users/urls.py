@@ -12,6 +12,7 @@ from .views import (
     RegisterView,
     UnfollowUserView,
 )
+from .views import DailyCoinClaimView, CoinClaimHistoryListView
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
@@ -32,4 +33,6 @@ urlpatterns = [
         ProfilePictureUploadView.as_view(),
         name="profile_upload_avatar",
     ),
+    path("claim-daily-coins/", DailyCoinClaimView.as_view(), name="claim_daily_coins"),
+    path("coin-claim-history/", CoinClaimHistoryListView.as_view(), name="coin_claim_history"),
 ]

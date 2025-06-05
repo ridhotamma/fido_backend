@@ -6,8 +6,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils import timezone
 
-from .models import Follow
+from .models import Follow, CoinClaimHistory
 from .serializers import (
     LoginByEmailOrPhoneSerializer,
     ProfilePictureSerializer,
@@ -44,6 +45,7 @@ class ProfileMeView(APIView):
             "bio": user.bio,
             "avatar": user.avatar.url if user.avatar else None,
             "phone_number": user.phone_number,
+            "coins": user.coins,
         }
         return Response(data)
 
@@ -89,15 +91,15 @@ class FollowUserView(APIView):
         try:
             to_follow = User.objects.get(id=user_id)
         except User.DoesNotExist:
-            return Response({"detail": "User not found."}, status=404)
+            return Response({"message": "User not found."}, status=404)
         if to_follow == request.user:
-            return Response({"detail": "You cannot follow yourself."}, status=400)
+            return Response({"message": "You cannot follow yourself."}, status=400)
         follow, created = Follow.objects.get_or_create(
             follower=request.user, following=to_follow
         )
         if not created:
-            return Response({"detail": "Already following."}, status=400)
-        return Response({"detail": f"Now following {to_follow.username}."}, status=201)
+            return Response({"message": "Already following."}, status=400)
+        return Response({"message": f"Now following {to_follow.username}."}, status=201)
 
 
 class UnfollowUserView(APIView):
@@ -107,15 +109,15 @@ class UnfollowUserView(APIView):
         try:
             to_unfollow = User.objects.get(id=user_id)
         except User.DoesNotExist:
-            return Response({"detail": "User not found."}, status=404)
+            return Response({"message": "User not found."}, status=404)
         deleted, _ = Follow.objects.filter(
             follower=request.user, following=to_unfollow
         ).delete()
         if deleted:
             return Response(
-                {"detail": f"Unfollowed {to_unfollow.username}."}, status=200
+                {"message": f"Unfollowed {to_unfollow.username}."}, status=200
             )
-        return Response({"detail": "You are not following this user."}, status=400)
+        return Response({"message": "You are not following this user."}, status=400)
 
 
 class FollowersListView(APIView):
@@ -164,3 +166,33 @@ class ProfilePictureUploadView(GenericAPIView):
                 status=200,
             )
         return Response(serializer.errors, status=400)
+
+
+class DailyCoinClaimView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        today = timezone.now().date()
+        if user.last_claimed == today:
+            return Response({
+                "message": "You have already claimed your daily coins."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        user.coins += 10
+        user.last_claimed = today
+        user.save(update_fields=["coins", "last_claimed"])
+        CoinClaimHistory.objects.create(user=user, amount=10)
+        return Response({
+            "message": "10 coins claimed!",
+            "coins": user.coins
+        }, status=status.HTTP_200_OK)
+
+
+class CoinClaimHistoryListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        claims = CoinClaimHistory.objects.filter(user=request.user)
+        from .serializers import CoinClaimHistorySerializer
+        serializer = CoinClaimHistorySerializer(claims, many=True)
+        return Response(serializer.data)

@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 import re
 
-from .models import CustomUser
+from .models import CustomUser, CoinClaimHistory
 
 User = get_user_model()
 
@@ -98,3 +98,9 @@ class ProfilePictureSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ["avatar", "avatar_sm", "avatar_md", "avatar_lg"]
+
+
+class CoinClaimHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CoinClaimHistory
+        fields = ["id", "claimed_at", "amount"]

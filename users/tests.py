@@ -80,7 +80,7 @@ class UserAuthTests(APITestCase):
         follow_url = reverse("follow_user", args=[user2.id])
         response = self.client.post(follow_url)
         self.assertEqual(response.status_code, 201)
-        self.assertIn("Now following", response.data["detail"])
+        self.assertIn("Now following", response.data["message"])
 
         # Check followers of user2
         followers_url = reverse("followers_list", args=[user2.id])
@@ -101,7 +101,7 @@ class UserAuthTests(APITestCase):
         unfollow_url = reverse("unfollow_user", args=[user2.id])
         response = self.client.post(unfollow_url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Unfollowed", response.data["detail"])
+        self.assertIn("Unfollowed", response.data["message"])
 
         # Check followers of user2 again
         response = self.client.get(followers_url)
@@ -174,3 +174,56 @@ class UserAvatarUploadTests(APITestCase):
         self.assertIsNotNone(self.user.avatar_sm)
         self.assertIsNotNone(self.user.avatar_md)
         self.assertIsNotNone(self.user.avatar_lg)
+
+
+class CoinClaimTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="coinuser", email="coinuser@example.com", password="pass1234"
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
+        self.claim_url = reverse("claim_daily_coins")
+        self.history_url = reverse("coin_claim_history")
+
+    def test_claim_coin_and_balance_and_history(self):
+        # Initial claim
+        response = self.client.post(self.claim_url)
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.coins, 10)
+        # History should have 1 entry
+        response = self.client.get(self.history_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["amount"], 10)
+        # Try to claim again the same day
+        response = self.client.post(self.claim_url)
+        self.assertEqual(response.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.coins, 10)  # No change
+        # History should still have 1 entry
+        response = self.client.get(self.history_url)
+        self.assertEqual(len(response.data), 1)
+
+    def test_claim_next_day(self):
+        from django.utils import timezone
+        import datetime
+
+        # First claim
+        self.client.post(self.claim_url)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.coins, 10)
+        # Simulate next day
+        self.user.last_claimed = timezone.now().date() - datetime.timedelta(days=1)
+        self.user.save(update_fields=["last_claimed"])
+        response = self.client.post(self.claim_url)
+        self.user.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.user.coins, 20)
+        # History should have 2 entries
+        response = self.client.get(self.history_url)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]["amount"], 10)
+        self.assertEqual(response.data[1]["amount"], 10)

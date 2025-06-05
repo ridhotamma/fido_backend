@@ -11,7 +11,7 @@ def custom_exception_handler(exc, context):
         return Response(
             {
                 "error": "Integrity error",
-                "detail": "A record with the same unique field already exists. Please use a different value.",
+                "message": "A record with the same unique field already exists. Please use a different value.",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -19,7 +19,7 @@ def custom_exception_handler(exc, context):
     # Handle DRF ValidationError
     if isinstance(exc, ValidationError):
         return Response(
-            {"error": "Validation error", "detail": exc.detail},
+            {"error": "Validation error", "message": exc.detail},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -27,13 +27,13 @@ def custom_exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is not None:
         # Standardize the error response format
-        response.data = {"error": response.status_code, "detail": response.data}
+        response.data = {"error": response.status_code, "message": response.data}
     else:
         # Unhandled errors (e.g., 500)
         return Response(
             {
                 "error": "Server error",
-                "detail": "An unexpected error occurred. Please try again later.",
+                "message": "An unexpected error occurred. Please try again later.",
             },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
