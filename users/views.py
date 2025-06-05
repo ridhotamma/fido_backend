@@ -14,6 +14,8 @@ from .serializers import (
     LoginByEmailOrPhoneSerializer,
     ProfilePictureSerializer,
     RegisterSerializer,
+    UserIdSerializer,
+    UserListSerializer,
 )
 
 User = get_user_model()
@@ -236,13 +238,7 @@ class FollowUserView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=OpenApiExample(
-            name='Follow User Request',
-            value={
-                'user_id': 123
-            },
-            request_only=True
-        ),
+        request=UserIdSerializer,
         responses={
             201: OpenApiResponse(
                 description='Successfully followed user',
@@ -309,13 +305,7 @@ class UnfollowUserView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=OpenApiExample(
-            name='Unfollow User Request',
-            value={
-                'user_id': 123
-            },
-            request_only=True
-        ),
+        request=UserIdSerializer,
         responses={
             200: OpenApiResponse(
                 description='Successfully unfollowed user',
@@ -378,26 +368,24 @@ class FollowersListView(APIView):
 
     @extend_schema(
         responses={
-            200: OpenApiResponse(
-                description='List of current user\'s followers',
-                examples=[
-                    OpenApiExample(
-                        name='Followers List',
-                        value=[
-                            {
-                                "id": 1,
-                                "username": "user1"
-                            },
-                            {
-                                "id": 2,
-                                "username": "user2"
-                            }
-                        ],
-                        status_codes=['200']
-                    ),
-                ]
+            200: UserListSerializer(many=True),
+        },
+        examples=[
+            OpenApiExample(
+                name='Followers List',
+                value=[
+                    {
+                        "id": 1,
+                        "username": "user1"
+                    },
+                    {
+                        "id": 2,
+                        "username": "user2"
+                    }
+                ],
+                response_only=True
             ),
-        }
+        ]
     )
     def get(self, request):
         followers = Follow.objects.filter(following=request.user).select_related(
@@ -406,7 +394,9 @@ class FollowersListView(APIView):
         data = [
             {"id": f.follower.id, "username": f.follower.username} for f in followers
         ]
-        return Response(data)
+        serializer = UserListSerializer(data=data, many=True)
+        serializer.is_valid()
+        return Response(serializer.data)
 
 
 class FollowingListView(APIView):
@@ -414,26 +404,24 @@ class FollowingListView(APIView):
 
     @extend_schema(
         responses={
-            200: OpenApiResponse(
-                description='List of users being followed by current user',
-                examples=[
-                    OpenApiExample(
-                        name='Following List',
-                        value=[
-                            {
-                                "id": 3,
-                                "username": "user3"
-                            },
-                            {
-                                "id": 4,
-                                "username": "user4"
-                            }
-                        ],
-                        status_codes=['200']
-                    ),
-                ]
+            200: UserListSerializer(many=True),
+        },
+        examples=[
+            OpenApiExample(
+                name='Following List',
+                value=[
+                    {
+                        "id": 3,
+                        "username": "user3"
+                    },
+                    {
+                        "id": 4,
+                        "username": "user4"
+                    }
+                ],
+                response_only=True
             ),
-        }
+        ]
     )
     def get(self, request):
         following = Follow.objects.filter(follower=request.user).select_related(
@@ -442,7 +430,9 @@ class FollowingListView(APIView):
         data = [
             {"id": f.following.id, "username": f.following.username} for f in following
         ]
-        return Response(data)
+        serializer = UserListSerializer(data=data, many=True)
+        serializer.is_valid()
+        return Response(serializer.data)
 
 
 class ProfilePictureUploadView(GenericAPIView):

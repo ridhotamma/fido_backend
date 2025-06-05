@@ -104,3 +104,12 @@ class CoinClaimHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = CoinClaimHistory
         fields = ["id", "claimed_at", "amount"]
+
+
+class UserIdSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(required=True, help_text="ID of the user to follow/unfollow")
+
+
+class UserListSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(read_only=True)
