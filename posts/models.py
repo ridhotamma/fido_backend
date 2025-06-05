@@ -87,3 +87,8 @@ class PostMedia(models.Model, ImageVariantMixin):
             self.file_md = variants.get("md")
             self.file_lg = variants.get("lg")
             super().save(update_fields=["file_sm", "file_md", "file_lg"])
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+        verbose_name = "Post Media"
+        verbose_name_plural = "Post Media"

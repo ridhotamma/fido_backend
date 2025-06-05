@@ -54,6 +54,8 @@ class CoinClaimHistory(models.Model):
 
     class Meta:
         ordering = ["-claimed_at"]
+        verbose_name = "Coin Claim History"
+        verbose_name_plural = "Coin Claim Histories"
 
     def __str__(self):
         return f"{self.user.username} claimed {self.amount} coins at {self.claimed_at}"
