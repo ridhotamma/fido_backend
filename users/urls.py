@@ -2,6 +2,8 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
+    CoinClaimHistoryListView,
+    DailyCoinClaimView,
     FollowersListView,
     FollowingListView,
     FollowUserView,
@@ -12,7 +14,6 @@ from .views import (
     RegisterView,
     UnfollowUserView,
 )
-from .views import DailyCoinClaimView, CoinClaimHistoryListView
 
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
