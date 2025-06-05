@@ -290,7 +290,7 @@ class FollowUserView(APIView):
         user_id = request.data.get('user_id')
         if not user_id:
             return Response({"message": "User ID is required."}, status=400)
-            
+
         try:
             to_follow = User.objects.get(id=user_id)
         except User.DoesNotExist:
@@ -358,7 +358,7 @@ class UnfollowUserView(APIView):
         user_id = request.data.get('user_id')
         if not user_id:
             return Response({"message": "User ID is required."}, status=400)
-            
+
         try:
             to_unfollow = User.objects.get(id=user_id)
         except User.DoesNotExist:
