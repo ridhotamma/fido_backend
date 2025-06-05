@@ -48,7 +48,9 @@ class Follow(models.Model):
 
 
 class CoinClaimHistory(models.Model):
-    user = models.ForeignKey(CustomUser, related_name="coin_claims", on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        CustomUser, related_name="coin_claims", on_delete=models.CASCADE
+    )
     claimed_at = models.DateTimeField(auto_now_add=True)
     amount = models.IntegerField(default=10)
 

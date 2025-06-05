@@ -175,17 +175,18 @@ class DailyCoinClaimView(APIView):
         user = request.user
         today = timezone.now().date()
         if user.last_claimed == today:
-            return Response({
-                "message": "You have already claimed your daily coins."
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "You have already claimed your daily coins."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         user.coins += 10
         user.last_claimed = today
         user.save(update_fields=["coins", "last_claimed"])
         CoinClaimHistory.objects.create(user=user, amount=10)
-        return Response({
-            "message": "10 coins claimed!",
-            "coins": user.coins
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "10 coins claimed!", "coins": user.coins},
+            status=status.HTTP_200_OK,
+        )
 
 
 class CoinClaimHistoryListView(APIView):
@@ -194,5 +195,6 @@ class CoinClaimHistoryListView(APIView):
     def get(self, request):
         claims = CoinClaimHistory.objects.filter(user=request.user)
         from .serializers import CoinClaimHistorySerializer
+
         serializer = CoinClaimHistorySerializer(claims, many=True)
         return Response(serializer.data)

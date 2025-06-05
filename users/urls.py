@@ -35,5 +35,9 @@ urlpatterns = [
         name="profile_upload_avatar",
     ),
     path("claim-daily-coins/", DailyCoinClaimView.as_view(), name="claim_daily_coins"),
-    path("coin-claim-history/", CoinClaimHistoryListView.as_view(), name="coin_claim_history"),
+    path(
+        "coin-claim-history/",
+        CoinClaimHistoryListView.as_view(),
+        name="coin_claim_history",
+    ),
 ]
