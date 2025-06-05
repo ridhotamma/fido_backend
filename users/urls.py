@@ -21,14 +21,10 @@ urlpatterns = [
     path("profile/update/", ProfileUpdateView.as_view(), name="profile_update"),
     path("login/", LoginByEmailOrPhoneView.as_view(), name="login"),
     path("refresh/", TokenRefreshView.as_view(), name="jwt_refresh"),
-    path("<int:user_id>/follow/", FollowUserView.as_view(), name="follow_user"),
-    path("<int:user_id>/unfollow/", UnfollowUserView.as_view(), name="unfollow_user"),
-    path(
-        "<int:user_id>/followers/", FollowersListView.as_view(), name="followers_list"
-    ),
-    path(
-        "<int:user_id>/following/", FollowingListView.as_view(), name="following_list"
-    ),
+    path("follow/", FollowUserView.as_view(), name="follow_user"),
+    path("unfollow/", UnfollowUserView.as_view(), name="unfollow_user"),
+    path("followers/", FollowersListView.as_view(), name="followers_list"),
+    path("following/", FollowingListView.as_view(), name="following_list"),
     path(
         "profile/upload-avatar/",
         ProfilePictureUploadView.as_view(),
