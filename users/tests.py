@@ -227,3 +227,17 @@ class CoinClaimTests(APITestCase):
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]["amount"], 10)
         self.assertEqual(response.data[1]["amount"], 10)
+
+    def test_cannot_claim_twice_in_one_day(self):
+        # First claim should succeed
+        response = self.client.post(self.claim_url)
+        self.assertEqual(response.status_code, 200)
+        # Second claim on the same day should fail
+        response = self.client.post(self.claim_url)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("already claimed", response.data["message"].lower())
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.coins, 10)
+        # History should only have 1 entry
+        response = self.client.get(self.history_url)
+        self.assertEqual(len(response.data), 1)
