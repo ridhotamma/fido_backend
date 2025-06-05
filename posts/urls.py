@@ -13,6 +13,7 @@ from .views import (
     PostUpdateView,
     UnlikeCommentView,
     UnlikePostView,
+    TagAutocompleteView,
 )
 
 urlpatterns = [
@@ -53,4 +54,5 @@ urlpatterns = [
         UnlikeCommentView.as_view(),
         name="comment-unlike",
     ),
+    path("tags/autocomplete/", TagAutocompleteView.as_view(), name="tag_autocomplete"),
 ]

@@ -1,11 +1,12 @@
 from django.contrib import admin
 
-from .models import Comment, CommentLike, Post, PostMedia
+from .models import Comment, CommentLike, Post, PostMedia, Tag
 
 # Register your models here.
 admin.site.register(Post)
 admin.site.register(Comment)
 admin.site.register(PostMedia)
+admin.site.register(Tag)
 
 
 @admin.register(CommentLike)

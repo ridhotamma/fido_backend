@@ -7,7 +7,7 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from notifications.models import Notification
-from posts.models import Comment, Post
+from posts.models import Comment, Post, Tag
 
 User = get_user_model()
 
@@ -212,3 +212,67 @@ class CommentLikeNotificationTests(APITestCase):
             notification_type="like",
         ).first()
         self.assertIsNone(notif)
+
+
+class TagAutocompleteTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="taguser", email="taguser@example.com", password="pass1234"
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
+        Tag.objects.create(name="pemilu2024", popularity=5)
+        Tag.objects.create(name="kaburajadulu", popularity=10)
+        Tag.objects.create(name="kabarbaik", popularity=7)
+
+    def test_tag_autocomplete_by_query(self):
+        resp = self.client.get("/api/posts/tags/autocomplete/?q=ka")
+        self.assertEqual(resp.status_code, 200)
+        names = [t["name"] for t in resp.data]
+        self.assertIn("kaburajadulu", names)
+        self.assertIn("kabarbaik", names)
+        self.assertNotIn("pemilu2024", names)
+        # Should be sorted by popularity desc
+        self.assertTrue(names.index("kaburajadulu") < names.index("kabarbaik"))
+
+    def test_tag_autocomplete_empty_query(self):
+        resp = self.client.get("/api/posts/tags/autocomplete/")
+        self.assertEqual(resp.status_code, 200)
+        # Should return top tags by popularity
+        names = [t["name"] for t in resp.data]
+        self.assertEqual(names[0], "kaburajadulu")
+        self.assertIn("pemilu2024", names)
+
+
+class PostTagCreationTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="tagcreator", email="tagcreator@example.com", password="pass1234"
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token}")
+
+    def test_tags_created_from_content(self):
+        data = {"content": "This is about #pemilu2024 and #kabarbaik"}
+        resp = self.client.post("/api/posts/create/", data, format="json")
+        self.assertEqual(resp.status_code, 201)
+        post_id = resp.data["id"]
+        post = Post.objects.get(id=post_id)
+        tag_names = set(post.tags.values_list("name", flat=True))
+        self.assertIn("pemilu2024", tag_names)
+        self.assertIn("kabarbaik", tag_names)
+        # Tags should be auto-created in DB
+        self.assertTrue(Tag.objects.filter(name="pemilu2024").exists())
+        self.assertTrue(Tag.objects.filter(name="kabarbaik").exists())
+
+    def test_tags_created_from_tag_names_field(self):
+        data = {"content": "No hashtag here", "tag_names": ["pemilu2024", "kabarbaik"]}
+        resp = self.client.post("/api/posts/create/", data, format="json")
+        self.assertEqual(resp.status_code, 201)
+        post_id = resp.data["id"]
+        post = Post.objects.get(id=post_id)
+        tag_names = set(post.tags.values_list("name", flat=True))
+        self.assertIn("pemilu2024", tag_names)
+        self.assertIn("kabarbaik", tag_names)

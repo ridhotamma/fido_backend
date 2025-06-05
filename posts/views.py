@@ -8,8 +8,8 @@ from rest_framework.views import APIView
 from notifications.models import Notification
 from notifications.views import send_realtime_notification
 
-from .models import Comment, CommentLike, Post, PostLike
-from .serializers import CommentSerializer, PostMediaSerializer, PostSerializer
+from .models import Comment, CommentLike, Post, PostLike, Tag
+from .serializers import CommentSerializer, PostMediaSerializer, PostSerializer, TagSerializer
 
 
 class PostCreateView(generics.CreateAPIView):
@@ -181,3 +181,15 @@ class UnlikeCommentView(APIView):
             {"detail": "You have not liked this comment."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class TagAutocompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        q = request.GET.get("q", "").strip().lower()
+        tags = Tag.objects.all()
+        if q:
+            tags = tags.filter(name__icontains=q)
+        tags = tags.order_by("-popularity", "name")[:10]
+        return Response(TagSerializer(tags, many=True).data)
