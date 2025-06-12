@@ -14,7 +14,6 @@ from .serializers import (
     LoginByEmailOrPhoneSerializer,
     ProfilePictureSerializer,
     RegisterSerializer,
-    UserIdSerializer,
     UserListSerializer,
 )
 
@@ -238,7 +237,6 @@ class FollowUserView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=UserIdSerializer,
         responses={
             201: OpenApiResponse(
                 description='Successfully followed user',
@@ -263,11 +261,6 @@ class FollowUserView(APIView):
                         value={'message': 'You cannot follow yourself.'},
                         status_codes=['400']
                     ),
-                    OpenApiExample(
-                        name='Missing User ID',
-                        value={'message': 'User ID is required.'},
-                        status_codes=['400']
-                    ),
                 ]
             ),
             404: OpenApiResponse(
@@ -282,11 +275,7 @@ class FollowUserView(APIView):
             ),
         }
     )
-    def post(self, request):
-        user_id = request.data.get('user_id')
-        if not user_id:
-            return Response({"message": "User ID is required."}, status=400)
-
+    def post(self, request, user_id):
         try:
             to_follow = User.objects.get(id=user_id)
         except User.DoesNotExist:
@@ -305,7 +294,6 @@ class UnfollowUserView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=UserIdSerializer,
         responses={
             200: OpenApiResponse(
                 description='Successfully unfollowed user',
@@ -325,11 +313,6 @@ class UnfollowUserView(APIView):
                         value={'message': 'You are not following this user.'},
                         status_codes=['400']
                     ),
-                    OpenApiExample(
-                        name='Missing User ID',
-                        value={'message': 'User ID is required.'},
-                        status_codes=['400']
-                    ),
                 ]
             ),
             404: OpenApiResponse(
@@ -344,11 +327,7 @@ class UnfollowUserView(APIView):
             ),
         }
     )
-    def post(self, request):
-        user_id = request.data.get('user_id')
-        if not user_id:
-            return Response({"message": "User ID is required."}, status=400)
-
+    def post(self, request, user_id):
         try:
             to_unfollow = User.objects.get(id=user_id)
         except User.DoesNotExist:
@@ -387,15 +366,19 @@ class FollowersListView(APIView):
             ),
         ]
     )
-    def get(self, request):
-        followers = Follow.objects.filter(following=request.user).select_related(
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"message": "User not found."}, status=404)
+
+        followers = Follow.objects.filter(following=user).select_related(
             "follower"
         )
         data = [
             {"id": f.follower.id, "username": f.follower.username} for f in followers
         ]
-        serializer = UserListSerializer(data=data, many=True)
-        serializer.is_valid()
+        serializer = UserListSerializer(data, many=True)
         return Response(serializer.data)
 
 
@@ -423,15 +406,19 @@ class FollowingListView(APIView):
             ),
         ]
     )
-    def get(self, request):
-        following = Follow.objects.filter(follower=request.user).select_related(
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"message": "User not found."}, status=404)
+
+        following = Follow.objects.filter(follower=user).select_related(
             "following"
         )
         data = [
             {"id": f.following.id, "username": f.following.username} for f in following
         ]
-        serializer = UserListSerializer(data=data, many=True)
-        serializer.is_valid()
+        serializer = UserListSerializer(data, many=True)
         return Response(serializer.data)
 
 
